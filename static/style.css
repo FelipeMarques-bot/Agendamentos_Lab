@@ -1,0 +1,510 @@
+﻿/* Variáveis CSS para cores e fontes */
+:root {
+    --primary-color: linear-gradient(to right, #4a90e2, #7b68ee); /* Gradiente Azul */
+    --primary-dark: #388E3C; /* Mantido verde escuro para outros usos, se houver */
+    --secondary-color: #007BFF; /* Azul padrão */
+    --secondary-dark: #0056b3;
+    --danger-color: #DC3545; /* Vermelho */
+    --danger-dark: #C82333;
+    --text-color: #333;
+    --light-text-color: #666;
+    --background-color: #f4f7f6;
+    --card-background: #ffffff;
+    --border-color: #e0e0e0;
+    --header-background: linear-gradient(to right, #4a90e2, #7b68ee); /* Gradiente Azul para o cabeçalho */
+    --header-text: #ffffff;
+    --font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --border-radius: 8px;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Reset básico e estilos globais */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family);
+    line-height: 1.6;
+    color: var(--text-color);
+    background-color: var(--background-color);
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Alinha ao topo para permitir scroll */
+    min-height: 100vh; /* Garante que o body ocupe a altura total da viewport */
+}
+
+.container {
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 40px); /* Ajusta para o padding do body */
+    overflow: hidden;
+}
+
+.header {
+    background-color: var(--header-background); /* Usando a variável do gradiente */
+    color: var(--header-text);
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.header-logo {
+    height: 100px;
+    width: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #fff; /* Fundo branco para a logo no cabeçalho */
+    padding: 3px;
+}
+
+.app-title {
+    font-size: 1.8em;
+    font-weight: 600;
+    margin: 0;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.welcome-message {
+    font-size: 1em;
+    margin: 0;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: var(--primary-color); /* Usando a variável do gradiente */
+    color: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.btn-primary:hover {
+    opacity: 0.9; /* Pequena opacidade no hover para o gradiente */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: #fff;
+}
+
+.btn-secondary:hover {
+    background-color: var(--secondary-dark);
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    color: #fff;
+}
+
+.btn-danger:hover {
+    background-color: var(--danger-dark);
+}
+
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    background-color: var(--card-background);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 20px;
+    gap: 5px;
+}
+
+.tab-button {
+    padding: 15px 25px;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    color: var(--light-text-color);
+    border-bottom: 3px solid transparent;
+    transition: color 0.3s ease, border-bottom-color 0.3s ease;
+}
+
+.tab-button.active {
+    color: var(--primary-color); /* Cor do texto da aba ativa */
+    border-bottom-color: #4a90e2; /* Cor da linha da aba ativa */
+}
+
+.tab-button:hover:not(.active) {
+    color: var(--text-color);
+}
+
+.main-content {
+    flex-grow: 1;
+    padding: 30px;
+    background-color: var(--background-color);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.card {
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    padding: 25px;
+    margin-bottom: 20px;
+}
+
+.section-title {
+    font-size: 1.6em;
+    color: var(--text-color);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--light-text-color);
+}
+
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="email"],
+.form-group input[type="date"],
+.form-group input[type="file"],
+.form-group select,
+.form-group textarea {
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 1em;
+    color: var(--text-color);
+    background-color: #fcfcfc;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-group input[type="file"] {
+    padding: 8px; /* Ajuste para input file */
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #4a90e2; /* Cor do foco */
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+    outline: none;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    overflow: hidden; /* Garante que bordas arredondadas funcionem */
+}
+
+table th, table td {
+    padding: 15px 20px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+table th {
+    background-color: #f0f2f5;
+    color: var(--text-color);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.9em;
+}
+
+table tr:last-child td {
+    border-bottom: none;
+}
+
+table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+.table-actions {
+    display: flex;
+    gap: 8px;
+    min-width: 120px; /* Garante que os botões não quebrem a linha */
+}
+
+.alert {
+    padding: 15px;
+    border-radius: var(--border-radius);
+    margin-bottom: 20px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+/* Estilos para páginas de autenticação (login, setup_admin) */
+.auth-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: var(--background-color); /* Fundo da página de login */
+    padding: 20px;
+}
+
+.auth-container {
+    background-color: var(--card-background);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 450px;
+    overflow: hidden;
+    text-align: center;
+}
+
+.auth-header {
+    background: var(--header-background); /* Usando a variável do gradiente para o cabeçalho de autenticação */
+    padding: 30px 20px;
+    color: var(--header-text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.auth-logo {
+    height: 150px;
+    width: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #fff; /* Fundo branco para o círculo da logo */
+    padding: 3px;
+}
+
+.auth-header .app-title {
+    font-size: 1.8em;
+    font-weight: 500;
+}
+
+.auth-main {
+    padding: 30px;
+}
+
+.auth-card {
+    box-shadow: none; /* Remove sombra extra dentro do auth-container */
+    padding: 0;
+    margin-bottom: 0;
+}
+
+.auth-card .section-title {
+    color: var(--text-color);
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 10px;
+}
+
+.auth-card .subtitle {
+    margin-bottom: 25px;
+}
+
+.auth-card .form-grid {
+    grid-template-columns: 1fr; /* Apenas uma coluna para formulários de autenticação */
+}
+
+.auth-card .form-actions {
+    justify-content: center;
+}
+
+/* Logo Preview na configuração da escola */
+.logo-display {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.logo-preview {
+    max-width: 100px;
+    max-height: 100px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    object-fit: contain;
+    background-color: #f9f9f9;
+    padding: 5px;
+}
+
+/* Responsividade */
+@media (max-width: 992px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .header-right {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    .tabs {
+        padding: 0 10px;
+    }
+    .tab-button {
+        padding: 12px 18px;
+        font-size: 0.95em;
+    }
+    .main-content {
+        padding: 20px;
+    }
+    .section-title {
+        font-size: 1.4em;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    .container {
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+        padding: 15px 20px;
+    }
+    .app-title {
+        font-size: 1.5em;
+    }
+    .tabs {
+        flex-direction: column;
+        padding: 0;
+    }
+    .tab-button {
+        width: 100%;
+        border-radius: 0;
+        margin-right: 0;
+        margin-bottom: 1px;
+        text-align: left;
+    }
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .btn {
+        width: 100%;
+    }
+    table th, table td {
+        padding: 10px 12px;
+        font-size: 0.9em;
+    }
+    .table-actions {
+        flex-direction: column;
+        gap: 5px;
+        min-width: unset;
+    }
+    .auth-header {
+        padding: 20px 15px;
+    }
+    .auth-main {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .app-title {
+        font-size: 1.3em;
+    }
+    .section-title {
+        font-size: 1.2em;
+    }
+    .auth-logo {
+        height: 60px;
+        width: 60px;
+    }
+    .auth-header .app-title {
+        font-size: 1.5em;
+    }
+}

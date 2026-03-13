@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Agendamentos Lab</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <header class="auth-header">
+            <img src="{{ url_for('static', filename='logo_default.png') }}" alt="Logo da Escola" class="auth-logo">
+            <h1 class="app-title">Agendamentos Lab</h1>
+        </header>
+        <main class="auth-main">
+            <div class="auth-card">
+                <h2 class="section-title">Login</h2>
+                <p class="subtitle">Selecione seu tipo de usuário e faça login.</p>
+                {% if error %}
+                    <p class="error-message">{{ error }}</p>
+                {% endif %}
+                <form action="{{ url_for('login') }}" method="POST">
+                    <div class="form-group">
+                        <label for="username">Nome de Usuário:</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Senha:</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="user_type">Tipo de Usuário:</label>
+                        <select id="user_type" name="user_type" required>
+                            <option value="professor">Professor</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Entrar</button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

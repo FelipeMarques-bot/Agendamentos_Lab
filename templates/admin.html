@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo - Agendamentos Lab</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-left">
+                <img src="{{ logo_url }}" alt="Logo da Escola" class="header-logo">
+                <h1 class="app-title">Agendamentos Lab</h1>
+            </div>
+            <div class="header-right">
+                <span class="welcome-message">Olá, {{ session['username'] }} (Admin)</span>
+                <a href="{{ url_for('logout') }}" class="btn btn-secondary">Sair</a>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-button active" onclick="openTab(event, 'todosAgendamentos')">🗓️ Todos Agendamentos</button>
+            <button class="tab-button" onclick="openTab(event, 'configEscola')">🏫 Escola</button>
+            <button class="tab-button" onclick="openTab(event, 'disciplinas')">📚 Disciplinas</button>
+            <button class="tab-button" onclick="openTab(event, 'aulas')">⏰ Aulas</button>
+            <button class="tab-button" onclick="openTab(event, 'turmas')">🧑‍🎓 Turmas</button>
+            <button class="tab-button" onclick="openTab(event, 'recursos')">💻 Recursos</button>
+            <button class="tab-button" onclick="openTab(event, 'professores')">👨‍🏫 Professores</button>
+            <button class="tab-button" onclick="openTab(event, 'exportarDados')">📊 Exportar Dados</button>
+        </nav>
+
+        <main class="main-content">
+            <!-- Aba Todos Agendamentos -->
+            <div id="todosAgendamentos" class="tab-content active">
+                <h2 class="section-title">Todos os Agendamentos</h2>
+                <div class="table-container">
+                    <table id="agendamentosTable">
+                        <thead>
+                            <tr>
+                                <th>Professor</th>
+                                <th>Data</th>
+                                <th>Aula</th>
+                                <th>Disciplina</th>
+                                <th>Turma</th>
+                                <th>Tema</th>
+                                <th>Recurso</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Agendamentos serão carregados aqui via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Aba Configuração da Escola -->
+            <div id="configEscola" class="tab-content">
+                <h2 class="section-title">Configurações da Escola</h2>
+                <form id="formConfigEscola" enctype="multipart/form-data">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="nome_escola">Nome da Escola:</label>
+                            <input type="text" id="nome_escola" name="nome_escola" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="sigla">Sigla:</label>
+                            <input type="text" id="sigla" name="sigla" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="telefone">Telefone:</label>
+                            <input type="text" id="telefone" name="telefone">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">E-mail:</label>
+                            <input type="email" id="email" name="email">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="endereco">Endereço:</label>
+                            <input type="text" id="endereco" name="endereco">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="logo">Logo da Escola:</label>
+                            <input type="file" id="logo" name="logo" accept="image/png, image/jpeg, image/gif">
+                            <div class="logo-display">
+                                <img id="logoPreview" src="" alt="Prévia da Logo" class="logo-preview" style="display: none;">
+                                <button type="button" id="removeLogoBtn" class="btn btn-danger btn-small" style="display: none;">Remover Logo Atual</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Salvar Configurações</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Aba Disciplinas -->
+            <div id="disciplinas" class="tab-content">
+                <h2 class="section-title">Gerenciar Disciplinas</h2>
+                <form id="formDisciplina">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="disciplinaNome">Nome da Disciplina:</label>
+                            <input type="text" id="disciplinaNome" name="nome" required>
+                            <input type="hidden" id="disciplinaId" name="id">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Adicionar/Atualizar</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetForm('formDisciplina')">Limpar</button>
+                    </div>
+                </form>
+                <div class="table-container">
+                    <table id="disciplinasTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Disciplinas serão carregadas aqui via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Aba Aulas -->
+            <div id="aulas" class="tab-content">
+                <h2 class="section-title">Gerenciar Aulas</h2>
+                <form id="formAula">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="aulaNumero">Número da Aula:</label>
+                            <input type="text" id="aulaNumero" name="numero" required placeholder="Ex: 1ª Aula">
+                            <input type="hidden" id="aulaId" name="id">
+                        </div>
+                        <div class="form-group">
+                            <label for="aulaTurno">Turno:</label>
+                            <select id="aulaTurno" name="turno" required>
+                                <option value="">Selecione o Turno</option>
+                                <option value="Matutino">Matutino</option>
+                                <option value="Vespertino">Vespertino</option>
+                                <option value="Noturno">Noturno</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Adicionar/Atualizar</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetForm('formAula')">Limpar</button>
+                    </div>
+                </form>
+                <div class="table-container">
+                    <table id="aulasTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Número</th>
+                                <th>Turno</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Aulas serão carregadas aqui via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Aba Turmas -->
+            <div id="turmas" class="tab-content">
+                <h2 class="section-title">Gerenciar Turmas</h2>
+                <form id="formTurma">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="turmaNome">Nome da Turma:</label>
+                            <input type="text" id="turmaNome" name="nome" required>
+                            <input type="hidden" id="turmaId" name="id">
+                        </div>
+                        <div class="form-group">
+                            <label for="turmaSerie">Série (Opcional):</label>
+                            <input type="text" id="turmaSerie" name="serie">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Adicionar/Atualizar</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetForm('formTurma')">Limpar</button>
+                    </div>
+                </form>
+                <div class="table-container">
+                    <table id="turmasTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Série</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Turmas serão carregadas aqui via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Aba Recursos -->
+            <div id="recursos" class="tab-content">
+                <h2 class="section-title">Gerenciar Recursos</h2>
+                <form id="formRecurso">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="recursoNome">Nome do Recurso:</label>
+                            <input type="text" id="recursoNome" name="nome" required>
+                            <input type="hidden" id="recursoId" name="id">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Adicionar/Atualizar</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetForm('formRecurso')">Limpar</button>
+                    </div>
+                </form>
+                <div class="table-container">
+                    <table id="recursosTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Recursos serão carregados aqui via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Aba Professores -->
+            <div id="professores" class="tab-content">
+                <h2 class="section-title">Gerenciar Professores</h2>
+                <form id="formProfessor">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="professorNome">Nome de Usuário:</label>
+                            <input type="text" id="professorNome" name="nome" required>
+                            <input type="hidden" id="professorId" name="id">
+                        </div>
+                        <div class="form-group">
+                            <label for="professorSenha">Senha (apenas para novo professor):</label>
+                            <input type="password" id="professorSenha" name="senha">
+                        </div>
+                        <div class="form-group">
+                            <label for="professorEmail">E-mail (Opcional):</label>
+                            <input type="email" id="professorEmail" name="email">
+                        </div>
+                        <div class="form-group">
+                            <label for="professorDisciplina">Disciplina (Opcional):</label>
+                            <input type="text" id="professorDisciplina" name="disciplina">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Adicionar/Atualizar</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetForm('formProfessor')">Limpar</button>
+                    </div>
+                </form>
+                <div class="table-container">
+                    <table id="professoresTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>E-mail</th>
+                                <th>Disciplina</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Professores serão carregados aqui via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Aba Exportar Dados -->
+            <div id="exportarDados" class="tab-content">
+                <h2 class="section-title">Exportar Dados</h2>
+                <p>Selecione o tipo de dado que deseja exportar para um arquivo CSV.</p>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary" onclick="exportData('agendamentos')">Exportar Agendamentos</button>
+                    <button type="button" class="btn btn-primary" onclick="exportData('professores')">Exportar Professores</button>
+                    <button type="button" class="btn btn-primary" onclick="exportData('disciplinas')">Exportar Disciplinas</button>
+                    <button type="button" class="btn btn-primary" onclick="exportData('aulas')">Exportar Aulas</button>
+                    <button type="button" class="btn btn-primary" onclick="exportData('turmas')">Exportar Turmas</button>
+                    <button type="button" class="btn btn-primary" onclick="exportData('recursos')">Exportar Recursos</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Função para mostrar mensagens de notificação
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Função para abrir abas
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+
+            // Carregar dados da aba ao abrir
+            if (tabName === 'todosAgendamentos') loadAgendamentos();
+            if (tabName === 'configEscola') loadConfigEscola();
+            if (tabName === 'disciplinas') loadDisciplinas();
+            if (tabName === 'aulas') loadAulas();
+            if (tabName === 'turmas') loadTurmas();
+            if (tabName === 'recursos') loadRecursos();
+            if (tabName === 'professores') loadProfessores();
+        }
+
+        // Funções de carregamento de dados
+        async function loadAgendamentos() {
+            try {
+                const response = await fetch('/api/admin/agendamentos');
+                const agendamentos = await response.json();
+                const tableBody = document.querySelector('#agendamentosTable tbody');
+                tableBody.innerHTML = '';
+                agendamentos.forEach(ag => {
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = ag.professor_nome;
+                    row.insertCell().textContent = ag.data;
+                    row.insertCell().textContent = ag.aula;
+                    row.insertCell().textContent = ag.disciplina;
+                    row.insertCell().textContent = ag.turma;
+                    row.insertCell().textContent = ag.tema;
+                    row.insertCell().textContent = ag.recurso;
+                    const actionsCell = row.insertCell();
+                    actionsCell.className = 'table-actions';
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Excluir';
+                    deleteBtn.className = 'btn btn-danger btn-small';
+                    deleteBtn.onclick = () => deleteAgendamento(ag.id);
+                    actionsCell.appendChild(deleteBtn);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar agendamentos:', error);
+                showNotification('Erro ao carregar agendamentos.', 'error');
+            }
+        }
+
+        async function loadConfigEscola() {
+            try {
+                const response = await fetch('/api/config/escola');
+                const config = await response.json();
+                document.getElementById('nome_escola').value = config.nome_escola;
+                document.getElementById('sigla').value = config.sigla;
+                document.getElementById('telefone').value = config.telefone;
+                document.getElementById('email').value = config.email;
+                document.getElementById('endereco').value = config.endereco;
+
+                const logoPreview = document.getElementById('logoPreview');
+                const removeLogoBtn = document.getElementById('removeLogoBtn');
+                if (config.logo_url && config.logo_url !== '/static/logo_default.png') {
+                    logoPreview.src = config.logo_url;
+                    logoPreview.style.display = 'block';
+                    removeLogoBtn.style.display = 'inline-block';
+                } else {
+                    logoPreview.src = '';
+                    logoPreview.style.display = 'none';
+                    removeLogoBtn.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Erro ao carregar configurações da escola:', error);
+                showNotification('Erro ao carregar configurações da escola.', 'error');
+            }
+        }
+
+        async function loadDisciplinas() {
+            try {
+                const response = await fetch('/api/admin/disciplinas');
+                const disciplinas = await response.json();
+                const tableBody = document.querySelector('#disciplinasTable tbody');
+                tableBody.innerHTML = '';
+                disciplinas.forEach(d => {
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = d.id;
+                    row.insertCell().textContent = d.nome;
+                    const actionsCell = row.insertCell();
+                    actionsCell.className = 'table-actions';
+                    const editBtn = document.createElement('button');
+                    editBtn.textContent = 'Editar';
+                    editBtn.className = 'btn btn-secondary btn-small';
+                    editBtn.onclick = () => editDisciplina(d);
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Excluir';
+                    deleteBtn.className = 'btn btn-danger btn-small';
+                    deleteBtn.onclick = () => deleteDisciplina(d.id);
+                    actionsCell.appendChild(editBtn);
+                    actionsCell.appendChild(deleteBtn);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar disciplinas:', error);
+                showNotification('Erro ao carregar disciplinas.', 'error');
+            }
+        }
+
+        async function loadAulas() {
+            try {
+                const response = await fetch('/api/admin/aulas');
+                const aulas = await response.json();
+                const tableBody = document.querySelector('#aulasTable tbody');
+                tableBody.innerHTML = '';
+                aulas.forEach(a => {
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = a.id;
+                    row.insertCell().textContent = a.numero;
+                    row.insertCell().textContent = a.turno;
+                    const actionsCell = row.insertCell();
+                    actionsCell.className = 'table-actions';
+                    const editBtn = document.createElement('button');
+                    editBtn.textContent = 'Editar';
+                    editBtn.className = 'btn btn-secondary btn-small';
+                    editBtn.onclick = () => editAula(a);
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Excluir';
+                    deleteBtn.className = 'btn btn-danger btn-small';
+                    deleteBtn.onclick = () => deleteAula(a.id);
+                    actionsCell.appendChild(editBtn);
+                    actionsCell.appendChild(deleteBtn);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar aulas:', error);
+                showNotification('Erro ao carregar aulas.', 'error');
+            }
+        }
+
+        async function loadTurmas() {
+            try {
+                const response = await fetch('/api/admin/turmas');
+                const turmas = await response.json();
+                const tableBody = document.querySelector('#turmasTable tbody');
+                tableBody.innerHTML = '';
+                turmas.forEach(t => {
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = t.id;
+                    row.insertCell().textContent = t.nome;
+                    row.insertCell().textContent = t.serie || '';
+                    const actionsCell = row.insertCell();
+                    actionsCell.className = 'table-actions';
+                    const editBtn = document.createElement('button');
+                    editBtn.textContent = 'Editar';
+                    editBtn.className = 'btn btn-secondary btn-small';
+                    editBtn.onclick = () => editTurma(t);
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Excluir';
+                    deleteBtn.className = 'btn btn-danger btn-small';
+                    deleteBtn.onclick = () => deleteTurma(t.id);
+                    actionsCell.appendChild(editBtn);
+                    actionsCell.appendChild(deleteBtn);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar turmas:', error);
+                showNotification('Erro ao carregar turmas.', 'error');
+            }
+        }
+
+        async function loadRecursos() {
+            try {
+                const response = await fetch('/api/admin/recursos');
+                const recursos = await response.json();
+                const tableBody = document.querySelector('#recursosTable tbody');
+                tableBody.innerHTML = '';
+                recursos.forEach(r => {
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = r.id;
+                    row.insertCell().textContent = r.nome;
+                    const actionsCell = row.insertCell();
+                    actionsCell.className = 'table-actions';
+                    const editBtn = document.createElement('button');
+                    editBtn.textContent = 'Editar';
+                    editBtn.className = 'btn btn-secondary btn-small';
+                    editBtn.onclick = () => editRecurso(r);
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Excluir';
+                    deleteBtn.className = 'btn btn-danger btn-small';
+                    deleteBtn.onclick = () => deleteRecurso(r.id);
+                    actionsCell.appendChild(editBtn);
+                    actionsCell.appendChild(deleteBtn);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar recursos:', error);
+                showNotification('Erro ao carregar recursos.', 'error');
+            }
+        }
+
+        async function loadProfessores() {
+            try {
+                const response = await fetch('/api/admin/professores');
+                const professores = await response.json();
+                const tableBody = document.querySelector('#professoresTable tbody');
+                tableBody.innerHTML = '';
+                professores.forEach(p => {
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = p.id;
+                    row.insertCell().textContent = p.nome;
+                    row.insertCell().textContent = p.email || '';
+                    row.insertCell().textContent = p.disciplina || '';
+                    const actionsCell = row.insertCell();
+                    actionsCell.className = 'table-actions';
+                    const editBtn = document.createElement('button');
+                    editBtn.textContent = 'Editar';
+                    editBtn.className = 'btn btn-secondary btn-small';
+                    editBtn.onclick = () => editProfessor(p);
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Excluir';
+                    deleteBtn.className = 'btn btn-danger btn-small';
+                    deleteBtn.onclick = () => deleteProfessor(p.id);
+                    actionsCell.appendChild(editBtn);
+                    actionsCell.appendChild(deleteBtn);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar professores:', error);
+                showNotification('Erro ao carregar professores.', 'error');
+            }
+        }
+
+        // Funções de edição
+        function editDisciplina(disciplina) {
+            document.getElementById('disciplinaId').value = disciplina.id;
+            document.getElementById('disciplinaNome').value = disciplina.nome;
+        }
+
+        function editAula(aula) {
+            document.getElementById('aulaId').value = aula.id;
+            document.getElementById('aulaNumero').value = aula.numero;
+            document.getElementById('aulaTurno').value = aula.turno;
+        }
+
+        function editTurma(turma) {
+            document.getElementById('turmaId').value = turma.id;
+            document.getElementById('turmaNome').value = turma.nome;
+            document.getElementById('turmaSerie').value = turma.serie;
+        }
+
+        function editRecurso(recurso) {
+            document.getElementById('recursoId').value = recurso.id;
+            document.getElementById('recursoNome').value = recurso.nome;
+        }
+
+        function editProfessor(professor) {
+            document.getElementById('professorId').value = professor.id;
+            document.getElementById('professorNome').value = professor.nome;
+            document.getElementById('professorEmail').value = professor.email;
+            document.getElementById('professorDisciplina').value = professor.disciplina;
+            document.getElementById('professorSenha').removeAttribute('required'); // Senha não é obrigatória na edição
+        }
+
+        // Funções de exclusão
+        async function deleteAgendamento(id) {
+            if (!confirm('Tem certeza que deseja excluir este agendamento?')) return;
+            try {
+                const response = await fetch(`/api/admin/agendamentos?id=${id}`, { method: 'DELETE' });
+                const result = await response.json();
+                if (result.sucesso) {
+                    showNotification(result.mensagem);
+                    loadAgendamentos();
+                } else {
+                    showNotification(result.mensagem, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao excluir agendamento:', error);
+                showNotification('Erro ao excluir agendamento.', 'error');
+            }
+        }
+
+        async function deleteDisciplina(id) {
+            if (!confirm('Tem certeza que deseja excluir esta disciplina?')) return;
+            try {
+                const response = await fetch(`/api/admin/disciplinas?id=${id}`, { method: 'DELETE' });
+                const result = await response.json();
+                if (result.sucesso) {
+                    showNotification(result.mensagem);
+                    loadDisciplinas();
+                    resetForm('formDisciplina');
+                } else {
+                    showNotification(result.mensagem, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao excluir disciplina:', error);
+                showNotification('Erro ao excluir disciplina.', 'error');
+            }
+        }
+
+        async function deleteAula(id) {
+            if (!confirm('Tem certeza que deseja excluir esta aula?')) return;
+            try {
+                const response = await fetch(`/api/admin/aulas?id=${id}`, { method: 'DELETE' });
+                const result = await response.json();
+                if (result.sucesso) {
+                    showNotification(result.mensagem);
+                    loadAulas();
+                    resetForm('formAula');
+                } else {
+                    showNotification(result.mensagem, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao excluir aula:', error);
+                showNotification('Erro ao excluir aula.', 'error');
+            }
+        }
+
+        async function deleteTurma(id) {
+            if (!confirm('Tem certeza que deseja excluir esta turma?')) return;
+            try {
+                const response = await fetch(`/api/admin/turmas?id=${id}`, { method: 'DELETE' });
+                const result = await response.json();
+                if (result.sucesso) {
+                    showNotification(result.mensagem);
+                    loadTurmas();
+                    resetForm('formTurma');
+                } else {
+                    showNotification(result.mensagem, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao excluir turma:', error);
+                showNotification('Erro ao excluir turma.', 'error');
+            }
+        }
+
+        async function deleteRecurso(id) {
+            if (!confirm('Tem certeza que deseja excluir este recurso?')) return;
+            try {
+                const response = await fetch(`/api/admin/recursos?id=${id}`, { method: 'DELETE' });
+                const result = await response.json();
+                if (result.sucesso) {
+                    showNotification(result.mensagem);
+                    loadRecursos();
+                    resetForm('formRecurso');
+                } else {
+                    showNotification(result.mensagem, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao excluir recurso:', error);
+                showNotification('Erro ao excluir recurso.', 'error');
+            }
+        }
+
+        async function deleteProfessor(id) {
+            if (!confirm('Tem certeza que deseja excluir este professor?')) return;
+            try {
+                const response = await fetch(`/api/admin/professores?id=${id}`, { method: 'DELETE' });
+                const result = await response.json();
+                if (result.sucesso) {
+                    showNotification(result.mensagem);
+                    loadProfessores();
+                    resetForm('formProfessor');
+                } else {
+                    showNotification(result.mensagem, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao excluir professor:', error);
+                showNotification('Erro ao excluir professor.', 'error');
+            }
+        }
+
+        // Funções de formulário
+        function resetForm(formId) {
+            const form = document.getElementById(formId);
+            form.reset();
+            // Limpa IDs ocultos e reativa 'required' para senha se for formProfessor
+            if (formId === 'formDisciplina') document.getElementById('disciplinaId').value = '';
+            if (formId === 'formAula') document.getElementById('aulaId').value = '';
+            if (formId === 'formTurma') document.getElementById('turmaId').value = '';
+            if (formId === 'formRecurso') document.getElementById('recursoId').value = '';
+            if (formId === 'formProfessor') {
+                document.getElementById('professorId').value = '';
+                document.getElementById('professorSenha').setAttribute('required', 'required');
+            }
+        }
+
+        // Event Listeners para submissão de formulários
+        document.getElementById('formConfigEscola').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            formData.append('remover_logo', document.getElementById('removeLogoBtn').style.display === 'inline-block' && document.getElementById('logoPreview').src === '');
+
+            try {
+                const response = await fetch('/api/config/escola', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.sucesso) {
+                    showNotification(result.mensagem);
+                    loadConfigEscola(); // Recarrega para atualizar a logo no header
+                    // Atualiza a logo no header da página
+                    const headerLogo = document.querySelector('.header-logo');
+                    if (headerLogo) {
+                        headerLogo.src = result.logo_url;
+                    }
+                } else {
+                    showNotification(result.mensagem, 'error');
+                }
+            } catch (error) {
+                console.error('Erro de rede ao salvar configurações:', error);
+                showNotification('Erro de rede ao salvar configurações: ' + error.message, 'error');
+            }
+        });
+
+        document.getElementById('removeLogoBtn').addEventListener('click', function() {
+            document.getElementById('logoPreview').src = '';
+            document.getElementById('logoPreview').style.display = 'none';
+            this.style.display = 'none';
+            document.getElementById('logo').value = ''; // Limpa o input de arquivo
+        });
+
+        document.getElementById('logo').addEventListener('change', function() {
+            const file = this.files[0];
+            const logoPreview = document.getElementById('logoPreview');
+            const removeLogoBtn = document.getElementById('removeLogoBtn');
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    logoPreview.src = e.target.result;
+                    logoPreview.style.display = 'block';
+                    removeLogoBtn.style.display = 'inline-block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                logoPreview.src = '';
+                logoPreview.style.display = 'none';
+                removeLogoBtn.style.display = 'none';
+            }
+        });
+
+        document.getElementById('formDisciplina').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const id = document.getElementById('disciplinaId').value;
+            const nome = document.getElementById('disciplinaNome').value;
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/admin/disciplinas` : '/api/admin/disciplinas';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, nome: nome })
+                });
+                const result = await response.json();
+                if (result.sucesso) {
+                    showNotification(result.mensagem);
+                    loadDisciplinas();
+                    resetForm('formDisciplina');
+                } else {
+                    showNotification(result.mensagem, 'error');
+                }
+            } catch (error) {
+                console.error('Erro de rede ao salvar disciplina:', error);
+                showNotification('Erro de rede ao salvar disciplina: ' + error.message, 'error');
+            }
+        });
+
+        document.getElementById('formAula').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const id = document.getElementById('aulaId').value;
+            const numero = document.getElementById('aulaNumero').value;
+            const turno = document.getElementById('aulaTurno').value;
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/admin/aulas` : '/api/admin/aulas';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, numero: numero, turno: turno })
+                });
+                const result = await response.json();
+                if (result.sucesso) {
+                    showNotification(result.mensagem);
+                    loadAulas();
+                    resetForm('formAula');
+                } else {
+                    showNotification(result.mensagem, 'error');
+                }
+            } catch (error) {
+                console.error('Erro de rede ao salvar aula:', error);
+                showNotification('Erro de rede ao salvar aula: ' + error.message, 'error');
+            }
+        });
+
+        document.getElementById('formTurma').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const id = document.getElementById('turmaId').value;
+            const nome = document.getElementById('turmaNome').value;
+            const serie = document.getElementById('turmaSerie').value;
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/admin/turmas` : '/api/admin/turmas';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, nome: nome, serie: serie })
+                });
+                const result = await response.json();
+                if (result.sucesso) {
+                    showNotification(result.mensagem);
+                    loadTurmas();
+                    resetForm('formTurma');
+                } else {
+                    showNotification(result.mensagem, 'error');
+                }
+            } catch (error) {
+                console.error('Erro de rede ao salvar turma:', error);
+                showNotification('Erro de rede ao salvar turma: ' + error.message, 'error');
+            }
+        });
+
+        document.getElementById('formRecurso').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const id = document.getElementById('recursoId').value;
+            const nome = document.getElementById('recursoNome').value;
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/admin/recursos` : '/api/admin/recursos';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, nome: nome })
+                });
+                const result = await response.json();
+                if (result.sucesso) {
+                    showNotification(result.mensagem);
+                    loadRecursos();
+                    resetForm('formRecurso');
+                } else {
+                    showNotification(result.mensagem, 'error');
+                }
+            } catch (error) {
+                console.error('Erro de rede ao salvar recurso:', error);
+                showNotification('Erro de rede ao salvar recurso: ' + error.message, 'error');
+            }
+        });
+
+        document.getElementById('formProfessor').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const id = document.getElementById('professorId').value;
+            const nome = document.getElementById('professorNome').value;
+            const senha = document.getElementById('professorSenha').value;
+            const email = document.getElementById('professorEmail').value;
+            const disciplina = document.getElementById('professorDisciplina').value;
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `/api/admin/professores` : '/api/admin/professores';
+
+            // Validação de senha para POST
+            if (method === 'POST' && !senha) {
+                showNotification('A senha é obrigatória para adicionar um novo professor.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, nome: nome, senha: senha, email: email, disciplina: disciplina })
+                });
+                const result = await response.json();
+                if (result.sucesso) {
+                    showNotification(result.mensagem);
+                    loadProfessores();
+                    resetForm('formProfessor');
+                } else {
+                    showNotification(result.mensagem, 'error');
+                }
+            } catch (error) {
+                console.error('Erro de rede ao salvar professor:', error);
+                showNotification('Erro de rede ao salvar professor: ' + error.message, 'error');
+            }
+        });
+
+        // Função para exportar dados
+        async function exportData(type) {
+            try {
+                const response = await fetch(`/export/${type}`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `${type}_${new Date().toISOString().slice(0,10)}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    showNotification(`Dados de ${type} exportados com sucesso!`);
+                } else {
+                    const errorText = await response.text();
+                    showNotification(`Erro ao exportar dados de ${type}: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                console.error(`Erro ao exportar dados de ${type}:`, error);
+                showNotification(`Erro de rede ao exportar dados de ${type}.`, 'error');
+            }
+        }
+
+        // Inicialização: abre a primeira aba e carrega os dados
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelector('.tab-button.active').click();
+        });
+    </script>
+</body>
+</html>

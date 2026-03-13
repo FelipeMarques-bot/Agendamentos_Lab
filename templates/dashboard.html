@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard do Professor - Agendamentos Lab</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-left">
+                <img src="{{ logo_url }}" alt="Logo da Escola" class="header-logo">
+                <h1 class="app-title">Agendamentos Lab</h1>
+            </div>
+            <div class="header-right">
+                <span class="welcome-message">Olá, {{ session['username'] }} (Professor)</span>
+                <a href="{{ url_for('logout') }}" class="btn btn-secondary">Sair</a>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <h2 class="section-title">Agendar Aula</h2>
+            <form id="formAgendamento">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="dataAgendamento">Data:</label>
+                        <input type="date" id="dataAgendamento" name="data" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="aula">Aula:</label>
+                        <select id="aula" name="aula" required>
+                            <option value="">Carregando Aulas...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="disciplina">Disciplina:</label>
+                        <select id="disciplina" name="disciplina" required>
+                            <option value="">Carregando Disciplinas...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="turma">Turma:</label>
+                        <select id="turma" name="turma" required>
+                            <option value="">Carregando Turmas...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="recurso">Recurso:</label>
+                        <select id="recurso" name="recurso" required>
+                            <option value="">Carregando Recursos...</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="tema">Tema da Aula:</label>
+                        <input type="text" id="tema" name="tema" required>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Agendar</button>
+                    <button type="button" class="btn btn-secondary" onclick="resetForm('formAgendamento')">Limpar</button>
+                </div>
+            </form>
+
+            <h2 class="section-title">Minhas Aulas Agendadas</h2>
+            <div class="table-container">
+                <table id="minhasAulasTable">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Aula</th>
+                            <th>Disciplina</th>
+                            <th>Turma</th>
+                            <th>Tema</th>
+                            <th>Recurso</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Aulas agendadas serão carregadas aqui via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Função para mostrar mensagens de notificação
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Funções de carregamento de dropdowns
+        async function loadAulasDropdown() {
+            try {
+                const response = await fetch('/api/config/aulas');
+                const aulas = await response.json();
+                const select = document.getElementById('aula');
+                select.innerHTML = '<option value="">Selecione a Aula</option>';
+                aulas.forEach(a => {
+                    const option = document.createElement('option');
+                    option.value = a.display;
+                    option.textContent = a.display;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar aulas:', error);
+                showNotification('Erro ao carregar aulas.', 'error');
+                document.getElementById('aula').innerHTML = '<option value="">Erro ao carregar</option>';
+            }
+        }
+
+        async function loadDisciplinasDropdown() {
+            try {
+                const response = await fetch('/api/config/disciplinas');
+                const disciplinas = await response.json();
+                const select = document.getElementById('disciplina');
+                select.innerHTML = '<option value="">Selecione a Disciplina</option>';
+                disciplinas.forEach(d => {
+                    const option = document.createElement('option');
+                    option.value = d.nome;
+                    option.textContent = d.nome;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar disciplinas:', error);
+                showNotification('Erro ao carregar disciplinas.', 'error');
+                document.getElementById('disciplina').innerHTML = '<option value="">Erro ao carregar</option>';
+            }
+        }
+
+        async function loadTurmasDropdown() {
+            try {
+                const response = await fetch('/api/config/turmas');
+                const turmas = await response.json();
+                const select = document.getElementById('turma');
+                select.innerHTML = '<option value="">Selecione a Turma</option>';
+                turmas.forEach(t => {
+                    const option = document.createElement('option');
+                    option.value = t.nome;
+                    option.textContent = t.nome + (t.serie ? ` (${t.serie})` : '');
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar turmas:', error);
+                showNotification('Erro ao carregar turmas.', 'error');
+                document.getElementById('turma').innerHTML = '<option value="">Erro ao carregar</option>';
+            }
+        }
+
+        async function loadRecursosDropdown() {
+            try {
+                const response = await fetch('/api/config/recursos');
+                const recursos = await response.json();
+                const select = document.getElementById('recurso');
+                select.innerHTML = '<option value="">Selecione o Recurso</option>';
+                recursos.forEach(r => {
+                    const option = document.createElement('option');
+                    option.value = r.nome;
+                    option.textContent = r.nome;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar recursos:', error);
+                showNotification('Erro ao carregar recursos.', 'error');
+                document.getElementById('recurso').innerHTML = '<option value="">Erro ao carregar</option>';
+            }
+        }
+
+        // Função para carregar agendamentos do professor
+        async function loadMinhasAulas() {
+            try {
+                const response = await fetch('/api/agendamentos');
+                const agendamentos = await response.json();
+                const tableBody = document.querySelector('#minhasAulasTable tbody');
+                tableBody.innerHTML = '';
+                if (agendamentos.sucesso === false) { // Se a API retornar erro (ex: não logado)
+                    showNotification(agendamentos.mensagem, 'error');
+                    return;
+                }
+                agendamentos.forEach(ag => {
+                    const row = tableBody.insertRow();
+                    row.insertCell().textContent = ag.data;
+                    row.insertCell().textContent = ag.aula;
+                    row.insertCell().textContent = ag.disciplina;
+                    row.insertCell().textContent = ag.turma;
+                    row.insertCell().textContent = ag.tema;
+                    row.insertCell().textContent = ag.recurso;
+                    const actionsCell = row.insertCell();
+                    actionsCell.className = 'table-actions';
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Excluir';
+                    deleteBtn.className = 'btn btn-danger btn-small';
+                    deleteBtn.onclick = () => deleteAgendamento(ag.id);
+                    actionsCell.appendChild(deleteBtn);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar minhas aulas agendadas:', error);
+                showNotification('Erro ao carregar minhas aulas agendadas.', 'error');
+            }
+        }
+
+        // Função para deletar agendamento
+        async function deleteAgendamento(id) {
+            if (!confirm('Tem certeza que deseja excluir este agendamento?')) return;
+            try {
+                const response = await fetch(`/api/agendamentos?id=${id}`, { method: 'DELETE' });
+                const result = await response.json();
+                if (result.sucesso) {
+                    showNotification(result.mensagem);
+                    loadMinhasAulas();
+                } else {
+                    showNotification(result.mensagem, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao excluir agendamento:', error);
+                showNotification('Erro ao excluir agendamento.', 'error');
+            }
+        }
+
+        // Função para resetar formulário
+        function resetForm(formId) {
+            document.getElementById(formId).reset();
+        }
+
+        // Event Listener para submissão do formulário de agendamento
+        document.getElementById('formAgendamento').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const data = {
+                data: document.getElementById('dataAgendamento').value,
+                aula: document.getElementById('aula').value,
+                disciplina: document.getElementById('disciplina').value,
+                turma: document.getElementById('turma').value,
+                tema: document.getElementById('tema').value,
+                recurso: document.getElementById('recurso').value
+            };
+
+            try {
+                const response = await fetch('/api/agendamentos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.sucesso) {
+                    showNotification(result.mensagem);
+                    loadMinhasAulas();
+                    resetForm('formAgendamento');
+                } else {
+                    showNotification(result.mensagem, 'error');
+                }
+            } catch (error) {
+                console.error('Erro de rede ao agendar aula:', error);
+                showNotification('Erro de rede ao agendar aula: ' + error.message, 'error');
+            }
+        });
+
+        // Inicialização: carrega os dropdowns e as aulas agendadas
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAulasDropdown();
+            loadDisciplinasDropdown();
+            loadTurmasDropdown();
+            loadRecursosDropdown();
+            loadMinhasAulas();
+
+            // Define a data mínima para hoje
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('dataAgendamento').setAttribute('min', today);
+        });
+    </script>
+</body>
+</html>
