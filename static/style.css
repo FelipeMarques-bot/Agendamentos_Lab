@@ -66,6 +66,16 @@ body {
     gap: 15px;
 }
 
+/* Definição da animação de rotação */
+@keyframes rotateCoin {
+    0% {
+        transform: rotateY(0deg); /* Começa sem rotação */
+    }
+    100% {
+        transform: rotateY(360deg); /* Gira 360 graus no eixo Y */
+    }
+}
+
 .header-logo {
     height: 150px; /* Seu tamanho ajustado */
     width: 150px;  /* Seu tamanho ajustado */
@@ -73,6 +83,9 @@ body {
     object-fit: cover;
     background-color: #fff; /* Fundo branco para a logo no cabeçalho */
     padding: 3px;
+    /* Aplicação da animação à logo */
+    animation: rotateCoin 4s infinite linear; /* Nome da animação, duração, repetição infinita, velocidade constante */
+    transform-style: preserve-3d; /* Importante para a rotação 3D */
 }
 
 .app-title {
@@ -226,7 +239,19 @@ body {
     font-size: 1em;
     color: var(--text-color);
     background-color: #fdfdfd;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease; /* Adiciona 'transform' à transição */
+}
+
+/* Efeito ao passar o mouse nos campos de formulário */
+.form-group input[type="text"]:hover,
+.form-group input[type="email"]:hover,
+.form-group input[type="password"]:hover,
+.form-group input[type="date"]:hover,
+.form-group select:hover,
+.form-group textarea:hover {
+    border-color: #a0c8f7; /* Uma cor de borda diferente no hover */
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2); /* Uma sombra suave */
+    transform: translateY(-2px); /* Move o campo ligeiramente para cima */
 }
 
 .form-group input[type="text"]:focus,
@@ -238,6 +263,7 @@ body {
     border-color: var(--secondary-color);
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
     outline: none;
+    transform: translateY(-2px); /* Mantém o movimento se já estava no hover */
 }
 
 .form-group textarea {
@@ -262,7 +288,11 @@ table {
     margin-top: 20px;
     background-color: var(--card-background);
     border-radius: var(--border-radius);
-    overflow: hidden; /* Garante que bordas arredondadas funcionem */
+    overflow: hidden; /* Garante que as bordas arredondadas funcionem */
+}
+
+table thead {
+    background-color: #f0f0f0;
 }
 
 table th, table td {
@@ -272,14 +302,11 @@ table th, table td {
 }
 
 table th {
-    background-color: #f0f2f5;
-    color: var(--text-color);
     font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.9em;
+    color: var(--text-color);
 }
 
-table tr:last-child td {
+table tbody tr:last-child td {
     border-bottom: none;
 }
 
@@ -358,6 +385,9 @@ table tbody tr:hover {
     object-fit: cover;
     background-color: #fff; /* Fundo branco para o círculo da logo */
     padding: 3px;
+    /* Aplicação da animação à logo também na página de autenticação */
+    animation: rotateCoin 4s infinite linear;
+    transform-style: preserve-3d;
 }
 
 .auth-header .app-title {
