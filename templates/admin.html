@@ -901,21 +901,49 @@
 
         // Função para exportar dados
         async function exportData(type) {
+            let url = '';
+            let filenamePrefix = '';
+
+            // Define a URL e o prefixo do nome do arquivo com base no tipo
+            if (type === 'agendamentos') {
+                url = '/api/admin/exportar_agendamentos_csv';
+                filenamePrefix = 'agendamentos';
+            } else if (type === 'professores') {
+                url = '/api/admin/exportar_professores_csv'; // Precisaremos criar esta rota no app.py
+                filenamePrefix = 'professores';
+            } else if (type === 'disciplinas') {
+                url = '/api/admin/exportar_disciplinas_csv'; // Precisaremos criar esta rota no app.py
+                filenamePrefix = 'disciplinas';
+            } else if (type === 'aulas') {
+                url = '/api/admin/exportar_aulas_csv'; // Precisaremos criar esta rota no app.py
+                filenamePrefix = 'aulas';
+            } else if (type === 'turmas') {
+                url = '/api/admin/exportar_turmas_csv'; // Precisaremos criar esta rota no app.py
+                filenamePrefix = 'turmas';
+            } else if (type === 'recursos') {
+                url = '/api/admin/exportar_recursos_csv'; // Precisaremos criar esta rota no app.py
+                filenamePrefix = 'recursos';
+            } else {
+                showNotification(`Tipo de exportação desconhecido: ${type}`, 'error');
+                return;
+            }
+
             try {
-                const response = await fetch(`/export/${type}`);
+                const response = await fetch(url);
                 if (response.ok) {
                     const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
+                    const urlObject = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.style.display = 'none';
-                    a.href = url;
-                    a.download = `${type}_${new Date().toISOString().slice(0,10)}.csv`;
+                    a.href = urlObject;
+                    a.download = `${filenamePrefix}_${new Date().toISOString().slice(0,10)}.csv`;
                     document.body.appendChild(a);
                     a.click();
-                    window.URL.revokeObjectURL(url);
+                    window.URL.revokeObjectURL(urlObject);
                     showNotification(`Dados de ${type} exportados com sucesso!`);
                 } else {
                     const errorText = await response.text();
+                    console.error(`Erro ao exportar dados de ${type}:`, errorText);
                     showNotification(`Erro ao exportar dados de ${type}: ${errorText}`, 'error');
                 }
             } catch (error) {
