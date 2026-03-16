@@ -1,4 +1,4 @@
-﻿import io
+import io
 import csv
 import os
 from datetime import datetime
@@ -152,7 +152,9 @@ def setup_admin():
             session['user_type'] = 'admin'
             return redirect(url_for('admin_panel'))
 
-        return render_template('setup_admin.html')
+        # Para a página de setup_admin, a logo é sempre a padrão
+        default_logo_url = url_for('static', filename='logo_default.png')
+        return render_template('setup_admin.html', logo_url=default_logo_url)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -164,124 +166,133 @@ def login():
         if request.method == 'POST':
             username = request.form['username']
             password = request.form['password']
-            user_type = request.form['user_type'] # 'admin' ou 'professor'
+            professor = Professor.query.filter_by(nome=username).first()
 
-            user = Professor.query.filter_by(nome=username).first()
-
-            if user and user.check_password(password):
-                if user_type == 'admin' and user.eh_admin:
-                    session['logged_in'] = True
-                    session['user_id'] = user.id
-                    session['username'] = user.nome
-                    session['is_admin'] = True
-                    session['user_type'] = 'admin'
+            if professor and professor.check_password(password):
+                session['logged_in'] = True
+                session['user_id'] = professor.id
+                session['username'] = professor.nome
+                session['is_admin'] = professor.eh_admin
+                session['user_type'] = 'admin' if professor.eh_admin else 'professor'
+                if professor.eh_admin:
                     return redirect(url_for('admin_panel'))
-                elif user_type == 'professor' and not user.eh_admin:
-                    session['logged_in'] = True
-                    session['user_id'] = user.id
-                    session['username'] = user.nome
-                    session['is_admin'] = False
-                    session['user_type'] = 'professor'
-                    return redirect(url_for('dashboard'))
                 else:
-                    error = 'Tipo de usuário incorreto para as credenciais fornecidas.'
+                    return redirect(url_for('professor_panel'))
             else:
-                error = 'Nome de usuário ou senha inválidos.'
+                error = 'Usuário ou senha inválidos.'
+                # Para a página de login, a logo é sempre a padrão
+                default_logo_url = url_for('static', filename='logo_default.png')
+                return render_template('login.html', error=error, logo_url=default_logo_url)
 
-            return render_template('login.html', error=error)
-
-        return render_template('login.html')
+        # Para a página de login, a logo é sempre a padrão
+        default_logo_url = url_for('static', filename='logo_default.png')
+        return render_template('login.html', logo_url=default_logo_url)
 
 @app.route('/logout')
 @login_required
 def logout():
-    session.clear()
+    session.pop('logged_in', None)
+    session.pop('user_id', None)
+    session.pop('username', None)
+    session.pop('is_admin', None)
+    session.pop('user_type', None)
     return redirect(url_for('login'))
 
-@app.route('/admin')
+@app.route('/admin_panel')
 @admin_required
 def admin_panel():
     with app.app_context():
         config = ConfiguracaoEscola.query.first()
-        logo_url = config.logo_url if config and config.logo_url else '/static/logo_default.png'
+        logo_url = config.logo_url if config else url_for('static', filename='logo_default.png')
         return render_template('admin.html', logo_url=logo_url)
 
-@app.route('/dashboard')
+@app.route('/professor_panel')
 @login_required
-def dashboard():
+def professor_panel():
     with app.app_context():
         config = ConfiguracaoEscola.query.first()
-        logo_url = config.logo_url if config and config.logo_url else '/static/logo_default.png'
-        return render_template('dashboard.html', logo_url=logo_url)
+        logo_url = config.logo_url if config else url_for('static', filename='logo_default.png')
+        return render_template('professor.html', logo_url=logo_url)
 
-# ==================== ROTAS DE API (ADMIN) ====================
+# ==================== ROTAS DA API PARA ADMIN ====================
 
-@app.route('/api/config/escola', methods=['GET', 'POST'])
+@app.route('/api/admin/professores', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @admin_required
-def api_config_escola():
+def api_admin_professores():
     with app.app_context():
-        config = ConfiguracaoEscola.query.first()
-        if not config:
-            config = ConfiguracaoEscola()
-            db.session.add(config)
-            db.session.commit()
-
         if request.method == 'GET':
-            return jsonify({
-                'nome_escola': config.nome_escola,
-                'sigla': config.sigla,
-                'telefone': config.telefone,
-                'email': config.email,
-                'endereco': config.endereco,
-                'logo_url': config.logo_url
-            })
+            professores = Professor.query.order_by(Professor.nome).all()
+            professores_data = []
+            for p in professores:
+                professores_data.append({
+                    'id': p.id,
+                    'nome': p.nome,
+                    'email': p.email,
+                    'disciplina': p.disciplina,
+                    'eh_admin': p.eh_admin
+                })
+            return jsonify(professores_data)
 
         elif request.method == 'POST':
-            try:
-                # Recebe dados do formulário, incluindo arquivos
-                nome_escola = request.form.get('nome_escola')
-                sigla = request.form.get('sigla')
-                telefone = request.form.get('telefone')
-                email = request.form.get('email')
-                endereco = request.form.get('endereco')
-                remover_logo = request.form.get('remover_logo') == 'true'
+            data = request.get_json()
+            nome = data.get('nome')
+            senha = data.get('senha')
+            email = data.get('email')
+            disciplina = data.get('disciplina')
+            eh_admin = data.get('eh_admin', False)
 
-                config.nome_escola = nome_escola
-                config.sigla = sigla
-                config.telefone = telefone
-                config.email = email
-                config.endereco = endereco
+            if not nome or not senha:
+                return jsonify({'sucesso': False, 'mensagem': 'Nome e senha são obrigatórios.'}), 400
 
-                if remover_logo:
-                    if config.logo_url and config.logo_url != '/static/logo_default.png':
-                        old_logo_path = os.path.join(app.root_path, config.logo_url.lstrip('/'))
-                        if os.path.exists(old_logo_path):
-                            os.remove(old_logo_path)
-                    config.logo_url = '/static/logo_default.png'
+            if Professor.query.filter_by(nome=nome).first():
+                return jsonify({'sucesso': False, 'mensagem': 'Nome de usuário já existe.'}), 409
 
-                if 'logo' in request.files:
-                    file = request.files['logo']
-                    if file and allowed_file(file.filename):
-                        # Remove a logo antiga se não for a padrão
-                        if config.logo_url and config.logo_url != '/static/logo_default.png':
-                            old_logo_path = os.path.join(app.root_path, config.logo_url.lstrip('/'))
-                            if os.path.exists(old_logo_path):
-                                os.remove(old_logo_path)
+            novo_professor = Professor(nome=nome, senha=senha, email=email, disciplina=disciplina, eh_admin=eh_admin)
+            db.session.add(novo_professor)
+            db.session.commit()
+            return jsonify({'sucesso': True, 'mensagem': 'Professor adicionado com sucesso!', 'id': novo_professor.id})
 
-                        filename = secure_filename(file.filename)
-                        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                        file.save(filepath)
-                        config.logo_url = url_for('uploaded_file', filename=filename)
+        elif request.method == 'PUT':
+            data = request.get_json()
+            id = data.get('id')
+            nome = data.get('nome')
+            senha = data.get('senha')
+            email = data.get('email')
+            disciplina = data.get('disciplina')
+            eh_admin = data.get('eh_admin', False)
 
-                db.session.commit()
-                return jsonify({'sucesso': True, 'mensagem': 'Configurações da escola salvas!', 'logo_url': config.logo_url})
-            except Exception as e:
-                db.session.rollback()
-                return jsonify({'sucesso': False, 'mensagem': f'Erro ao salvar configurações: {str(e)}'}), 500
+            if not id:
+                return jsonify({'sucesso': False, 'mensagem': 'ID do professor é obrigatório.'}), 400
 
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+            professor = Professor.query.get(id)
+            if not professor:
+                return jsonify({'sucesso': False, 'mensagem': 'Professor não encontrado.'}), 404
+
+            # Verifica se o novo nome já existe e não é o do próprio professor
+            if nome and nome != professor.nome and Professor.query.filter_by(nome=nome).first():
+                return jsonify({'sucesso': False, 'mensagem': 'Nome de usuário já existe.'}), 409
+
+            professor.nome = nome
+            if senha: # Atualiza a senha apenas se uma nova for fornecida
+                professor.senha = generate_password_hash(senha)
+            professor.email = email
+            professor.disciplina = disciplina
+            professor.eh_admin = eh_admin
+            db.session.commit()
+            return jsonify({'sucesso': True, 'mensagem': 'Professor atualizado com sucesso!'})
+
+        elif request.method == 'DELETE':
+            id = request.args.get('id')
+            if not id:
+                return jsonify({'sucesso': False, 'mensagem': 'ID do professor é obrigatório.'}), 400
+
+            professor = Professor.query.get(id)
+            if not professor:
+                return jsonify({'sucesso': False, 'mensagem': 'Professor não encontrado.'}), 404
+
+            db.session.delete(professor)
+            db.session.commit()
+            return jsonify({'sucesso': True, 'mensagem': 'Professor removido com sucesso!'})
 
 @app.route('/api/admin/disciplinas', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @admin_required
@@ -298,7 +309,6 @@ def api_admin_disciplinas():
                 return jsonify({'sucesso': False, 'mensagem': 'Nome da disciplina é obrigatório.'}), 400
             if Disciplina.query.filter_by(nome=nome).first():
                 return jsonify({'sucesso': False, 'mensagem': 'Disciplina já existe.'}), 409
-
             nova_disciplina = Disciplina(nome=nome)
             db.session.add(nova_disciplina)
             db.session.commit()
@@ -310,14 +320,11 @@ def api_admin_disciplinas():
             nome = data.get('nome')
             if not id or not nome:
                 return jsonify({'sucesso': False, 'mensagem': 'ID e nome da disciplina são obrigatórios.'}), 400
-
             disciplina = Disciplina.query.get(id)
             if not disciplina:
                 return jsonify({'sucesso': False, 'mensagem': 'Disciplina não encontrada.'}), 404
-
-            if Disciplina.query.filter(Disciplina.nome == nome, Disciplina.id != id).first():
-                return jsonify({'sucesso': False, 'mensagem': 'Já existe uma disciplina com este nome.'}), 409
-
+            if nome != disciplina.nome and Disciplina.query.filter_by(nome=nome).first():
+                return jsonify({'sucesso': False, 'mensagem': 'Disciplina já existe.'}), 409
             disciplina.nome = nome
             db.session.commit()
             return jsonify({'sucesso': True, 'mensagem': 'Disciplina atualizada com sucesso!'})
@@ -326,11 +333,9 @@ def api_admin_disciplinas():
             id = request.args.get('id')
             if not id:
                 return jsonify({'sucesso': False, 'mensagem': 'ID da disciplina é obrigatório.'}), 400
-
             disciplina = Disciplina.query.get(id)
             if not disciplina:
                 return jsonify({'sucesso': False, 'mensagem': 'Disciplina não encontrada.'}), 404
-
             db.session.delete(disciplina)
             db.session.commit()
             return jsonify({'sucesso': True, 'mensagem': 'Disciplina removida com sucesso!'})
@@ -340,7 +345,7 @@ def api_admin_disciplinas():
 def api_admin_aulas():
     with app.app_context():
         if request.method == 'GET':
-            aulas = Aula.query.order_by(Aula.numero, Aula.turno).all()
+            aulas = Aula.query.order_by(Aula.turno, Aula.numero).all()
             return jsonify([{'id': a.id, 'numero': a.numero, 'turno': a.turno} for a in aulas])
 
         elif request.method == 'POST':
@@ -349,10 +354,8 @@ def api_admin_aulas():
             turno = data.get('turno')
             if not numero or not turno:
                 return jsonify({'sucesso': False, 'mensagem': 'Número e turno da aula são obrigatórios.'}), 400
-
             if Aula.query.filter_by(numero=numero, turno=turno).first():
-                return jsonify({'sucesso': False, 'mensagem': 'Já existe uma aula com este número e turno.'}), 409
-
+                return jsonify({'sucesso': False, 'mensagem': 'Aula já existe para este turno.'}), 409
             nova_aula = Aula(numero=numero, turno=turno)
             db.session.add(nova_aula)
             db.session.commit()
@@ -365,14 +368,11 @@ def api_admin_aulas():
             turno = data.get('turno')
             if not id or not numero or not turno:
                 return jsonify({'sucesso': False, 'mensagem': 'ID, número e turno da aula são obrigatórios.'}), 400
-
             aula = Aula.query.get(id)
             if not aula:
                 return jsonify({'sucesso': False, 'mensagem': 'Aula não encontrada.'}), 404
-
-            if Aula.query.filter(Aula.numero == numero, Aula.turno == turno, Aula.id != id).first():
-                return jsonify({'sucesso': False, 'mensagem': 'Já existe uma aula com este número e turno.'}), 409
-
+            if (numero != aula.numero or turno != aula.turno) and Aula.query.filter_by(numero=numero, turno=turno).first():
+                return jsonify({'sucesso': False, 'mensagem': 'Aula já existe para este turno.'}), 409
             aula.numero = numero
             aula.turno = turno
             db.session.commit()
@@ -382,11 +382,9 @@ def api_admin_aulas():
             id = request.args.get('id')
             if not id:
                 return jsonify({'sucesso': False, 'mensagem': 'ID da aula é obrigatório.'}), 400
-
             aula = Aula.query.get(id)
             if not aula:
                 return jsonify({'sucesso': False, 'mensagem': 'Aula não encontrada.'}), 404
-
             db.session.delete(aula)
             db.session.commit()
             return jsonify({'sucesso': True, 'mensagem': 'Aula removida com sucesso!'})
@@ -407,7 +405,6 @@ def api_admin_turmas():
                 return jsonify({'sucesso': False, 'mensagem': 'Nome da turma é obrigatório.'}), 400
             if Turma.query.filter_by(nome=nome).first():
                 return jsonify({'sucesso': False, 'mensagem': 'Turma já existe.'}), 409
-
             nova_turma = Turma(nome=nome, serie=serie)
             db.session.add(nova_turma)
             db.session.commit()
@@ -420,14 +417,11 @@ def api_admin_turmas():
             serie = data.get('serie')
             if not id or not nome:
                 return jsonify({'sucesso': False, 'mensagem': 'ID e nome da turma são obrigatórios.'}), 400
-
             turma = Turma.query.get(id)
             if not turma:
                 return jsonify({'sucesso': False, 'mensagem': 'Turma não encontrada.'}), 404
-
-            if Turma.query.filter(Turma.nome == nome, Turma.id != id).first():
-                return jsonify({'sucesso': False, 'mensagem': 'Já existe uma turma com este nome.'}), 409
-
+            if nome != turma.nome and Turma.query.filter_by(nome=nome).first():
+                return jsonify({'sucesso': False, 'mensagem': 'Turma já existe.'}), 409
             turma.nome = nome
             turma.serie = serie
             db.session.commit()
@@ -437,11 +431,9 @@ def api_admin_turmas():
             id = request.args.get('id')
             if not id:
                 return jsonify({'sucesso': False, 'mensagem': 'ID da turma é obrigatório.'}), 400
-
             turma = Turma.query.get(id)
             if not turma:
                 return jsonify({'sucesso': False, 'mensagem': 'Turma não encontrada.'}), 404
-
             db.session.delete(turma)
             db.session.commit()
             return jsonify({'sucesso': True, 'mensagem': 'Turma removida com sucesso!'})
@@ -461,7 +453,6 @@ def api_admin_recursos():
                 return jsonify({'sucesso': False, 'mensagem': 'Nome do recurso é obrigatório.'}), 400
             if Recurso.query.filter_by(nome=nome).first():
                 return jsonify({'sucesso': False, 'mensagem': 'Recurso já existe.'}), 409
-
             novo_recurso = Recurso(nome=nome)
             db.session.add(novo_recurso)
             db.session.commit()
@@ -473,14 +464,11 @@ def api_admin_recursos():
             nome = data.get('nome')
             if not id or not nome:
                 return jsonify({'sucesso': False, 'mensagem': 'ID e nome do recurso são obrigatórios.'}), 400
-
             recurso = Recurso.query.get(id)
             if not recurso:
                 return jsonify({'sucesso': False, 'mensagem': 'Recurso não encontrado.'}), 404
-
-            if Recurso.query.filter(Recurso.nome == nome, Recurso.id != id).first():
-                return jsonify({'sucesso': False, 'mensagem': 'Já existe um recurso com este nome.'}), 409
-
+            if nome != recurso.nome and Recurso.query.filter_by(nome=nome).first():
+                return jsonify({'sucesso': False, 'mensagem': 'Recurso já existe.'}), 409
             recurso.nome = nome
             db.session.commit()
             return jsonify({'sucesso': True, 'mensagem': 'Recurso atualizado com sucesso!'})
@@ -489,181 +477,195 @@ def api_admin_recursos():
             id = request.args.get('id')
             if not id:
                 return jsonify({'sucesso': False, 'mensagem': 'ID do recurso é obrigatório.'}), 400
-
             recurso = Recurso.query.get(id)
             if not recurso:
                 return jsonify({'sucesso': False, 'mensagem': 'Recurso não encontrado.'}), 404
-
             db.session.delete(recurso)
             db.session.commit()
             return jsonify({'sucesso': True, 'mensagem': 'Recurso removido com sucesso!'})
 
-@app.route('/api/admin/professores', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@app.route('/api/config/escola', methods=['GET', 'POST'])
 @admin_required
-def api_admin_professores():
+def api_config_escola():
     with app.app_context():
+        config = ConfiguracaoEscola.query.first()
+        if not config:
+            config = ConfiguracaoEscola()
+            db.session.add(config)
+            db.session.commit()
+
         if request.method == 'GET':
-            professores = Professor.query.filter_by(eh_admin=False).order_by(Professor.nome).all()
-            return jsonify([{'id': p.id, 'nome': p.nome, 'email': p.email, 'disciplina': p.disciplina} for p in professores])
+            return jsonify({
+                'sucesso': True,
+                'nome_escola': config.nome_escola,
+                'sigla': config.sigla,
+                'telefone': config.telefone,
+                'email': config.email,
+                'endereco': config.endereco,
+                'logo_url': config.logo_url
+            })
 
         elif request.method == 'POST':
-            data = request.get_json()
-            nome = data.get('nome')
-            senha = data.get('senha')
-            email = data.get('email')
-            disciplina = data.get('disciplina')
+            config.nome_escola = request.form.get('nome_escola', config.nome_escola)
+            config.sigla = request.form.get('sigla', config.sigla)
+            config.telefone = request.form.get('telefone', config.telefone)
+            config.email = request.form.get('email', config.email)
+            config.endereco = request.form.get('endereco', config.endereco)
 
-            if not nome or not senha:
-                return jsonify({'sucesso': False, 'mensagem': 'Nome e senha são obrigatórios.'}), 400
+            # Lógica para remover a logo
+            remover_logo = request.form.get('remover_logo') == 'true'
+            if remover_logo:
+                if config.logo_url and config.logo_url != '/static/logo_default.png':
+                    try:
+                        # Remove o arquivo físico se não for a logo padrão
+                        # O caminho precisa ser absoluto para os.remove
+                        logo_path = os.path.join(app.root_path, 'static', 'uploads', os.path.basename(config.logo_url))
+                        if os.path.exists(logo_path):
+                            os.remove(logo_path)
+                    except Exception as e:
+                        print(f"Erro ao remover arquivo de logo: {e}") # Para debug
+                        pass # Ignora se o arquivo já não existir ou houver outro erro
+                config.logo_url = '/static/logo_default.png' # Volta para a logo padrão
 
-            if Professor.query.filter_by(nome=nome).first():
-                return jsonify({'sucesso': False, 'mensagem': 'Nome de usuário já existe.'}), 409
+            # Lógica para upload de nova logo
+            if 'logo' in request.files:
+                file = request.files['logo']
+                if file and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    # Garante que a pasta 'uploads' exista dentro de 'static'
+                    upload_dir = os.path.join(app.root_path, 'static', app.config['UPLOAD_FOLDER'])
+                    os.makedirs(upload_dir, exist_ok=True) # Cria a pasta se não existir
 
-            if email and Professor.query.filter_by(email=email).first():
-                return jsonify({'sucesso': False, 'mensagem': 'E-mail já em uso.'}), 409
+                    filepath = os.path.join(upload_dir, filename)
+                    file.save(filepath)
+                    config.logo_url = url_for('static', filename=f'{app.config["UPLOAD_FOLDER"]}/{filename}') # Salva o caminho relativo
+                elif file and file.filename == '': # Se o campo de arquivo foi enviado mas vazio (não selecionou novo arquivo)
+                    pass # Não faz nada, mantém a logo existente ou a padrão
 
-            novo_professor = Professor(nome=nome, senha=senha, email=email, disciplina=disciplina, eh_admin=False)
-            db.session.add(novo_professor)
             db.session.commit()
-            return jsonify({'sucesso': True, 'mensagem': 'Professor adicionado com sucesso!', 'id': novo_professor.id})
+            return jsonify({'sucesso': True, 'mensagem': 'Configurações da escola salvas com sucesso!', 'logo_url': config.logo_url})
 
-        elif request.method == 'PUT':
-            data = request.get_json()
-            id = data.get('id')
-            nome = data.get('nome')
-            email = data.get('email')
-            disciplina = data.get('disciplina')
-
-            if not id or not nome:
-                return jsonify({'sucesso': False, 'mensagem': 'ID e nome do professor são obrigatórios.'}), 400
-
-            professor = Professor.query.get(id)
-            if not professor:
-                return jsonify({'sucesso': False, 'mensagem': 'Professor não encontrado.'}), 404
-
-            if Professor.query.filter(Professor.nome == nome, Professor.id != id).first():
-                return jsonify({'sucesso': False, 'mensagem': 'Já existe um professor com este nome.'}), 409
-
-            if email and Professor.query.filter(Professor.email == email, Professor.id != id).first():
-                return jsonify({'sucesso': False, 'mensagem': 'E-mail já em uso por outro professor.'}), 409
-
-            professor.nome = nome
-            professor.email = email if email else None
-            professor.disciplina = disciplina
-            db.session.commit()
-            return jsonify({'sucesso': True, 'mensagem': 'Professor atualizado com sucesso!'})
-
-        elif request.method == 'DELETE':
-            id = request.args.get('id')
-            if not id:
-                return jsonify({'sucesso': False, 'mensagem': 'ID do professor é obrigatório.'}), 400
-
-            professor = Professor.query.get(id)
-            if not professor:
-                return jsonify({'sucesso': False, 'mensagem': 'Professor não encontrado.'}), 404
-
-            db.session.delete(professor)
-            db.session.commit()
-            return jsonify({'sucesso': True, 'mensagem': 'Professor removido com sucesso!'})
-
-@app.route('/api/admin/agendamentos', methods=['GET', 'DELETE'])
+@app.route('/api/admin/agendamentos_todos', methods=['GET'])
 @admin_required
-def api_admin_agendamentos():
+def api_admin_agendamentos_todos():
     with app.app_context():
-        if request.method == 'GET':
-            agendamentos = Agendamento.query.order_by(Agendamento.data.desc()).all()
-            agendamentos_data = []
-            for ag in agendamentos:
-                professor = Professor.query.get(ag.professor_id)
-                agendamentos_data.append({
-                    'id': ag.id,
-                    'professor_nome': professor.nome if professor else 'Desconhecido',
-                    'data': ag.data,
-                    'aula': ag.aula,
-                    'disciplina': ag.disciplina,
-                    'turma': ag.turma,
-                    'tema': ag.tema,
-                    'recurso': ag.recurso
-                })
-            return jsonify(agendamentos_data)
+        agendamentos = Agendamento.query.join(Professor).order_by(Agendamento.data.desc()).all()
+        agendamentos_data = []
+        for ag in agendamentos:
+            agendamentos_data.append({
+                'id': ag.id,
+                'professor_nome': ag.professor.nome,
+                'data': ag.data,
+                'aula': ag.aula,
+                'disciplina': ag.disciplina,
+                'turma': ag.turma,
+                'tema': ag.tema,
+                'recurso': ag.recurso
+            })
+        return jsonify(agendamentos_data)
 
-        elif request.method == 'DELETE':
-            id = request.args.get('id')
-            if not id:
-                return jsonify({'sucesso': False, 'mensagem': 'ID do agendamento é obrigatório.'}), 400
+@app.route('/api/admin/agendamentos_todos/<int:agendamento_id>', methods=['DELETE'])
+@admin_required
+def api_admin_delete_agendamento(agendamento_id):
+    with app.app_context():
+        agendamento = Agendamento.query.get(agendamento_id)
+        if not agendamento:
+            return jsonify({'sucesso': False, 'mensagem': 'Agendamento não encontrado.'}), 404
+        db.session.delete(agendamento)
+        db.session.commit()
+        return jsonify({'sucesso': True, 'mensagem': 'Agendamento removido com sucesso!'})
 
-            agendamento = Agendamento.query.get(id)
-            if not agendamento:
-                return jsonify({'sucesso': False, 'mensagem': 'Agendamento não encontrado.'}), 404
-
-            db.session.delete(agendamento)
-            db.session.commit()
-            return jsonify({'sucesso': True, 'mensagem': 'Agendamento removido com sucesso!'})
-
+# Rotas de exportação CSV
 @app.route('/api/admin/exportar_agendamentos_csv', methods=['GET'])
 @admin_required
 def exportar_agendamentos_csv():
     with app.app_context():
-        agendamentos = Agendamento.query.order_by(Agendamento.data.desc()).all()
-    # Cria um buffer de string na memória para o CSV
-    output = io.StringIO()
-    writer = csv.writer(output)
+        si = io.StringIO()
+        cw = csv.writer(si)
 
-    # Escreve o cabeçalho
-    writer.writerow(['ID', 'Professor', 'Data', 'Aula', 'Disciplina', 'Turma', 'Tema', 'Recurso'])
+        # Cabeçalho
+        cw.writerow(['ID', 'Professor', 'Data', 'Aula', 'Disciplina', 'Turma', 'Tema', 'Recurso'])
 
-    # Escreve os dados
-    for ag in agendamentos:
-        professor = Professor.query.get(ag.professor_id)
-        writer.writerow([
-            ag.id,
-            professor.nome if professor else 'Desconhecido',
-            ag.data,
-            ag.aula,
-            ag.disciplina,
-            ag.turma,
-            ag.tema,
-            ag.recurso
-        ])
+        # Dados
+        agendamentos = Agendamento.query.join(Professor).order_by(Agendamento.data.desc()).all()
+        for ag in agendamentos:
+            cw.writerow([ag.id, ag.professor.nome, ag.data, ag.aula, ag.disciplina, ag.turma, ag.tema, ag.recurso])
 
-    # Prepara a resposta para download
-    output.seek(0) # Volta o ponteiro para o início do buffer
-    return send_file(
-        io.BytesIO(output.getvalue().encode('utf-8')), # Converte para bytes
-        mimetype='text/csv',
-        as_attachment=True,
-        download_name='agendamentos.csv'
-    )
+        output = io.BytesIO(si.getvalue().encode('utf-8'))
+        output.seek(0)
+        return send_file(output, mimetype='text/csv', as_attachment=True, download_name='agendamentos.csv')
 
-# ==================== ROTAS DE API (PROFESSOR) ====================
-
-@app.route('/api/config/aulas', methods=['GET'])
-@login_required
-def api_config_aulas():
+@app.route('/api/admin/exportar_professores_csv', methods=['GET'])
+@admin_required
+def exportar_professores_csv():
     with app.app_context():
-        aulas = Aula.query.order_by(Aula.numero, Aula.turno).all()
-        return jsonify([{'id': a.id, 'display': f"{a.numero} ({a.turno})"} for a in aulas])
+        si = io.StringIO()
+        cw = csv.writer(si)
+        cw.writerow(['ID', 'Nome', 'Email', 'Disciplina', 'Admin'])
+        professores = Professor.query.order_by(Professor.nome).all()
+        for p in professores:
+            cw.writerow([p.id, p.nome, p.email, p.disciplina, 'Sim' if p.eh_admin else 'Não'])
+        output = io.BytesIO(si.getvalue().encode('utf-8'))
+        output.seek(0)
+        return send_file(output, mimetype='text/csv', as_attachment=True, download_name='professores.csv')
 
-@app.route('/api/config/disciplinas', methods=['GET'])
-@login_required
-def api_config_disciplinas():
+@app.route('/api/admin/exportar_disciplinas_csv', methods=['GET'])
+@admin_required
+def exportar_disciplinas_csv():
     with app.app_context():
+        si = io.StringIO()
+        cw = csv.writer(si)
+        cw.writerow(['ID', 'Nome'])
         disciplinas = Disciplina.query.order_by(Disciplina.nome).all()
-        return jsonify([{'id': d.id, 'nome': d.nome} for d in disciplinas])
+        for d in disciplinas:
+            cw.writerow([d.id, d.nome])
+        output = io.BytesIO(si.getvalue().encode('utf-8'))
+        output.seek(0)
+        return send_file(output, mimetype='text/csv', as_attachment=True, download_name='disciplinas.csv')
 
-@app.route('/api/config/turmas', methods=['GET'])
-@login_required
-def api_config_turmas():
+@app.route('/api/admin/exportar_aulas_csv', methods=['GET'])
+@admin_required
+def exportar_aulas_csv():
     with app.app_context():
+        si = io.StringIO()
+        cw = csv.writer(si)
+        cw.writerow(['ID', 'Numero', 'Turno'])
+        aulas = Aula.query.order_by(Aula.turno, Aula.numero).all()
+        for a in aulas:
+            cw.writerow([a.id, a.numero, a.turno])
+        output = io.BytesIO(si.getvalue().encode('utf-8'))
+        output.seek(0)
+        return send_file(output, mimetype='text/csv', as_attachment=True, download_name='aulas.csv')
+
+@app.route('/api/admin/exportar_turmas_csv', methods=['GET'])
+@admin_required
+def exportar_turmas_csv():
+    with app.app_context():
+        si = io.StringIO()
+        cw = csv.writer(si)
+        cw.writerow(['ID', 'Nome', 'Serie'])
         turmas = Turma.query.order_by(Turma.nome).all()
-        return jsonify([{'id': t.id, 'nome': t.nome} for t in turmas])
+        for t in turmas:
+            cw.writerow([t.id, t.nome, t.serie])
+        output = io.BytesIO(si.getvalue().encode('utf-8'))
+        output.seek(0)
+        return send_file(output, mimetype='text/csv', as_attachment=True, download_name='turmas.csv')
 
-@app.route('/api/config/recursos', methods=['GET'])
-@login_required
-def api_config_recursos():
+@app.route('/api/admin/exportar_recursos_csv', methods=['GET'])
+@admin_required
+def exportar_recursos_csv():
     with app.app_context():
+        si = io.StringIO()
+        cw = csv.writer(si)
+        cw.writerow(['ID', 'Nome'])
         recursos = Recurso.query.order_by(Recurso.nome).all()
-        return jsonify([{'id': r.id, 'nome': r.nome} for r in recursos])
+        for r in recursos:
+            cw.writerow([r.id, r.nome])
+        output = io.BytesIO(si.getvalue().encode('utf-8'))
+        output.seek(0)
+        return send_file(output, mimetype='text/csv', as_attachment=True, download_name='recursos.csv')
+
+# ==================== ROTAS DA API PARA PROFESSOR (se houver) ====================
 
 @app.route('/api/agendamentos', methods=['GET', 'POST', 'DELETE'])
 @login_required
@@ -744,6 +746,38 @@ def api_agendamentos():
             db.session.delete(agendamento)
             db.session.commit()
             return jsonify({'sucesso': True, 'mensagem': 'Agendamento removido com sucesso!'})
+
+@app.route('/api/config/aulas', methods=['GET'])
+@login_required
+def api_config_aulas():
+    with app.app_context():
+        aulas = Aula.query.order_by(Aula.turno, Aula.numero).all()
+        return jsonify([{'id': a.id, 'numero': a.numero, 'turno': a.turno, 'display': f"{a.numero} ({a.turno})"} for a in aulas])
+
+@app.route('/api/config/disciplinas', methods=['GET'])
+@login_required
+def api_config_disciplinas():
+    with app.app_context():
+        disciplinas = Disciplina.query.order_by(Disciplina.nome).all()
+        return jsonify([{'id': d.id, 'nome': d.nome} for d in disciplinas])
+
+@app.route('/api/config/turmas', methods=['GET'])
+@login_required
+def api_config_turmas():
+    with app.app_context():
+        turmas = Turma.query.order_by(Turma.nome).all()
+        return jsonify([{'id': t.id, 'nome': t.nome} for t in turmas])
+
+@app.route('/api/config/recursos', methods=['GET'])
+@login_required
+def api_config_recursos():
+    with app.app_context():
+        recursos = Recurso.query.order_by(Recurso.nome).all()
+        return jsonify([{'id': r.id, 'nome': r.nome} for r in recursos])
+
+@app.route('/static/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(os.path.join(app.root_path, 'static', app.config['UPLOAD_FOLDER']), filename)
 
 # ==================== FUNÇÕES DE INICIALIZAÇÃO ====================
 
