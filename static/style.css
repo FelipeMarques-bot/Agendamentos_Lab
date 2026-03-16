@@ -1,4 +1,4 @@
-﻿/* Variáveis CSS para cores e fontes */
+/* Variáveis CSS para cores e fontes */
 :root {
     --primary-color: linear-gradient(to right, #4a90e2, #7b68ee); /* Gradiente Azul */
     --primary-dark: #388E3C; /* Mantido verde escuro para outros usos, se houver */
@@ -67,8 +67,8 @@ body {
 }
 
 .header-logo {
-    height: 100px;
-    width: 100px;
+    height: 150px; /* Seu tamanho ajustado */
+    width: 150px;  /* Seu tamanho ajustado */
     border-radius: 50%;
     object-fit: cover;
     background-color: #fff; /* Fundo branco para a logo no cabeçalho */
@@ -215,10 +215,9 @@ body {
 }
 
 .form-group input[type="text"],
-.form-group input[type="password"],
 .form-group input[type="email"],
+.form-group input[type="password"],
 .form-group input[type="date"],
-.form-group input[type="file"],
 .form-group select,
 .form-group textarea {
     padding: 12px;
@@ -226,19 +225,18 @@ body {
     border-radius: var(--border-radius);
     font-size: 1em;
     color: var(--text-color);
-    background-color: #fcfcfc;
+    background-color: #fdfdfd;
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.form-group input[type="file"] {
-    padding: 8px; /* Ajuste para input file */
-}
-
-.form-group input:focus,
+.form-group input[type="text"]:focus,
+.form-group input[type="email"]:focus,
+.form-group input[type="password"]:focus,
+.form-group input[type="date"]:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-    border-color: #4a90e2; /* Cor do foco */
-    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
     outline: none;
 }
 
@@ -354,8 +352,8 @@ table tbody tr:hover {
 }
 
 .auth-logo {
-    height: 150px;
-    width: 150px;
+    height: 150px; /* Seu tamanho ajustado */
+    width: 150px;  /* Seu tamanho ajustado */
     border-radius: 50%;
     object-fit: cover;
     background-color: #fff; /* Fundo branco para o círculo da logo */
@@ -414,6 +412,40 @@ table tbody tr:hover {
     background-color: #f9f9f9;
     padding: 5px;
 }
+
+/* Estilos para as notificações flutuantes */
+.notification {
+    position: fixed;
+    top: 20px; /* Posição inicial no topo */
+    right: 20px; /* Posição inicial na direita */
+    background-color: #333;
+    color: #fff;
+    padding: 15px 25px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+    transform: translateY(-100px); /* Começa acima da tela */
+}
+
+.notification.success {
+    background-color: #28a745; /* Verde para sucesso */
+}
+
+.notification.error {
+    background-color: #dc3545; /* Vermelho para erro */
+}
+
+.notification.info {
+    background-color: #17a2b8; /* Azul para informação */
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateY(0); /* Desliza para a posição */
+}
+
 
 /* Responsividade */
 @media (max-width: 992px) {
@@ -491,6 +523,34 @@ table tbody tr:hover {
     .auth-main {
         padding: 20px;
     }
+
+    /* --- NOVOS AJUSTES PARA CELULAR (768px e abaixo) --- */
+
+    /* Ajuste para os botões de exportar dados */
+    #exportarDados .form-actions {
+        display: grid; /* Usa grid para organizar os botões */
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); /* 2 ou mais botões por linha */
+        gap: 10px; /* Espaçamento entre os botões */
+        margin-top: 20px;
+    }
+
+    #exportarDados .form-actions .btn {
+        width: auto; /* Deixa o grid controlar a largura */
+    }
+
+    /* Ajustes para as notificações */
+    .notification {
+        width: 90%; /* Ocupa mais largura da tela */
+        left: 50%; /* Centraliza */
+        right: auto; /* Desativa o right para o left funcionar */
+        transform: translateX(-50%); /* Ajusta para o centro exato */
+        font-size: 0.9em; /* Reduz um pouco o tamanho da fonte */
+        padding: 12px; /* Ajusta o padding */
+        top: 10px; /* Posiciona mais perto do topo */
+        /* Garante que a notificação não seja cortada em telas muito pequenas */
+        max-width: calc(100% - 20px); /* Largura máxima com padding */
+        box-sizing: border-box; /* Inclui padding e borda na largura */
+    }
 }
 
 @media (max-width: 480px) {
@@ -506,5 +566,9 @@ table tbody tr:hover {
     }
     .auth-header .app-title {
         font-size: 1.5em;
+    }
+    /* Ajuste adicional para os botões de exportar em telas muito pequenas */
+    #exportarDados .form-actions {
+        grid-template-columns: 1fr; /* Um botão por linha em telas muito pequenas */
     }
 }
