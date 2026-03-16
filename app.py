@@ -600,6 +600,41 @@ def api_admin_agendamentos():
             db.session.commit()
             return jsonify({'sucesso': True, 'mensagem': 'Agendamento removido com sucesso!'})
 
+@app.route('/api/admin/exportar_agendamentos_csv', methods=['GET'])
+@admin_required
+def exportar_agendamentos_csv():
+    with app.app_context():
+        agendamentos = Agendamento.query.order_by(Agendamento.data.desc()).all()
+    # Cria um buffer de string na memória para o CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Escreve o cabeçalho
+    writer.writerow(['ID', 'Professor', 'Data', 'Aula', 'Disciplina', 'Turma', 'Tema', 'Recurso'])
+
+    # Escreve os dados
+    for ag in agendamentos:
+        professor = Professor.query.get(ag.professor_id)
+        writer.writerow([
+            ag.id,
+            professor.nome if professor else 'Desconhecido',
+            ag.data,
+            ag.aula,
+            ag.disciplina,
+            ag.turma,
+            ag.tema,
+            ag.recurso
+        ])
+
+    # Prepara a resposta para download
+    output.seek(0) # Volta o ponteiro para o início do buffer
+    return send_file(
+        io.BytesIO(output.getvalue().encode('utf-8')), # Converte para bytes
+        mimetype='text/csv',
+        as_attachment=True,
+        download_name='agendamentos.csv'
+    )
+
 # ==================== ROTAS DE API (PROFESSOR) ====================
 
 @app.route('/api/config/aulas', methods=['GET'])
