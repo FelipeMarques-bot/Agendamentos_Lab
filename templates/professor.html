@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Professor - Agendamentos Lab</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-left">
+                <img src="{{ logo_url }}" alt="Logo da Escola" class="header-logo">
+                <h1 class="app-title">Agendamentos Lab</h1>
+            </div>
+            <div class="header-right">
+                <span class="welcome-message">Olá, {{ session['username'] }} (Professor)</span>
+                <a href="{{ url_for('logout') }}" class="btn btn-secondary">Sair</a>
+            </div>
+        </header>
+    &lt;main class="main-content"&gt;
+        &lt;h2 class="section-title"&gt;Bem-vindo(a) ao Painel do Professor!&lt;/h2&gt;
+        &lt;p&gt;Aqui você poderá gerenciar seus agendamentos.&lt;/p&gt;
+        &lt;!-- Adicione o conteúdo específico do painel do professor aqui --&gt;
+    &lt;/main&gt;
+&lt;/div&gt;
+</body>
+</html>
