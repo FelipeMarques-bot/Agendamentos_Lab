@@ -665,7 +665,7 @@ def exportar_recursos_csv():
         output.seek(0)
         return send_file(output, mimetype='text/csv', as_attachment=True, download_name='recursos.csv')
 
-# ==================== ROTAS DA API PARA PROFESSOR (se houver) ====================
+# ==================== ROTAS DA API PARA PROFESSOR  ====================
 
 @app.route('/api/agendamentos', methods=['GET', 'POST', 'DELETE'])
 @login_required
