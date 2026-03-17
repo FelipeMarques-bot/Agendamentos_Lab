@@ -143,20 +143,11 @@
         // Função para carregar os agendamentos do professor logado
         async function loadMeusAgendamentos() {
             try {
-                const response = await fetch('/api/professor/meus_agendamentos');
+                // CORREÇÃO AQUI: Usar a rota /api/agendamentos que você já tem no app.py
+                const response = await fetch('/api/agendamentos');
                 const agendamentos = await response.json();
                 const tbody = document.getElementById('meusAgendamentosTable').querySelector('tbody');
                 tbody.innerHTML = ''; // Limpa a tabela antes de preencher
-
-                if (agendamentos.length === 0) {
-                    const row = tbody.insertRow();
-                    const cell = row.insertCell();
-                    cell.colSpan = 7; // Número de colunas na tabela
-                    cell.textContent = 'Nenhum agendamento encontrado.';
-                    cell.style.textAlign = 'center';
-                    return;
-                }
-
                 agendamentos.forEach(ag => {
                     const row = tbody.insertRow();
                     row.insertCell().textContent = ag.data;
@@ -178,14 +169,15 @@
             }
         }
 
-        // Função para carregar as opções dos selects do formulário de agendamento
+        // Função para carregar opções para os selects do formulário de agendamento
         async function loadFormAgendamentoOptions() {
             try {
+                // CORREÇÃO AQUI: Usar as rotas /api/config/ que são acessíveis ao professor
                 const [aulasRes, disciplinasRes, turmasRes, recursosRes] = await Promise.all([
-                    fetch('/api/admin/aulas'),
-                    fetch('/api/admin/disciplinas'),
-                    fetch('/api/admin/turmas'),
-                    fetch('/api/admin/recursos')
+                    fetch('/api/config/aulas'),
+                    fetch('/api/config/disciplinas'),
+                    fetch('/api/config/turmas'),
+                    fetch('/api/config/recursos')
                 ]);
 
                 const aulas = await aulasRes.json();
@@ -193,9 +185,9 @@
                 const turmas = await turmasRes.json();
                 const recursos = await recursosRes.json();
 
-                populateSelect('agendamentoAula', aulas, 'numero', 'turno'); // Passa 'turno' para formatar
+                populateSelect('agendamentoAula', aulas, 'numero', 'turno');
                 populateSelect('agendamentoDisciplina', disciplinas, 'nome');
-                populateSelect('agendamentoTurma', turmas, 'nome', 'serie'); // Passa 'serie' para formatar
+                populateSelect('agendamentoTurma', turmas, 'nome', 'serie');
                 populateSelect('agendamentoRecurso', recursos, 'nome');
 
             } catch (error) {
@@ -232,7 +224,8 @@
             const tema = formData.get('tema');
 
             try {
-                const response = await fetch('/api/professor/agendamentos', {
+                // CORREÇÃO AQUI: Usar a rota /api/agendamentos que você já tem no app.py
+                const response = await fetch('/api/agendamentos', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ data, aula, disciplina, turma, recurso, tema })
@@ -259,7 +252,8 @@
                 return;
             }
             try {
-                const response = await fetch(`/api/professor/agendamentos/${id}`, {
+                // CORREÇÃO AQUI: Usar a rota /api/agendamentos?id= que você já tem no app.py
+                const response = await fetch(`/api/agendamentos?id=${id}`, {
                     method: 'DELETE'
                 });
                 const result = await response.json();
