@@ -11,7 +11,6 @@
     <div class="container">
         <header class="header">
             <div class="header-left">
-                <!-- A logo aqui usará a logo configurada na escola, se houver, ou a padrão -->
                 <img src="{{ logo_url }}" alt="Logo da Escola" class="header-logo">
                 <h1 class="app-title">Agendamentos Lab</h1>
             </div>
@@ -21,12 +20,271 @@
             </div>
         </header>
 
+        <nav class="tabs">
+            <button class="tab-button active" onclick="openTab(event, 'meusAgendamentos')">🗓️ Meus Agendamentos</button>
+            <button class="tab-button" onclick="openTab(event, 'novoAgendamento')">➕ Novo Agendamento</button>
+        </nav>
+
         <main class="main-content">
-            <h2 class="section-title">Bem-vindo(a) ao Painel do Professor!</h2>
-            <p>Aqui você poderá gerenciar seus agendamentos.</p>
-            <!-- Você pode adicionar o conteúdo específico do painel do professor aqui -->
-            <!-- Por exemplo, uma tabela de agendamentos ou um formulário para criar novos -->
+            <!-- Aba Meus Agendamentos -->
+            <div id="meusAgendamentos" class="tab-content active">
+                <h2 class="section-title">Meus Agendamentos</h2>
+                <div class="table-container">
+                    <table id="meusAgendamentosTable">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Aula</th>
+                                <th>Disciplina</th>
+                                <th>Turma</th>
+                                <th>Tema</th>
+                                <th>Recurso</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Agendamentos do professor serão carregados aqui via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Aba Novo Agendamento -->
+            <div id="novoAgendamento" class="tab-content">
+                <h2 class="section-title">Criar Novo Agendamento</h2>
+                <form id="formNovoAgendamento">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="agendamentoData">Data:</label>
+                            <input type="date" id="agendamentoData" name="data" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="agendamentoAula">Aula:</label>
+                            <select id="agendamentoAula" name="aula" required>
+                                <option value="">Selecione a Aula</option>
+                                <!-- Aulas serão carregadas aqui via JS -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="agendamentoDisciplina">Disciplina:</label>
+                            <select id="agendamentoDisciplina" name="disciplina" required>
+                                <option value="">Selecione a Disciplina</option>
+                                <!-- Disciplinas serão carregadas aqui via JS -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="agendamentoTurma">Turma:</label>
+                            <select id="agendamentoTurma" name="turma" required>
+                                <option value="">Selecione a Turma</option>
+                                <!-- Turmas serão carregadas aqui via JS -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="agendamentoRecurso">Recurso:</label>
+                            <select id="agendamentoRecurso" name="recurso" required>
+                                <option value="">Selecione o Recurso</option>
+                                <!-- Recursos serão carregados aqui via JS -->
+                            </select>
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="agendamentoTema">Tema da Aula:</label>
+                            <input type="text" id="agendamentoTema" name="tema" required placeholder="Ex: Introdução à Programação">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Agendar Aula</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetForm('formNovoAgendamento')">Limpar</button>
+                    </div>
+                </form>
+            </div>
         </main>
     </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        // Função para exibir notificações
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification show ${type}`;
+            setTimeout(() => {
+                notification.className = notification.className.replace('show', '');
+            }, 3000);
+        }
+
+        // Função para resetar formulários
+        function resetForm(formId) {
+            document.getElementById(formId).reset();
+        }
+
+        // Função para abrir abas
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+
+            // Carrega os dados da aba ativa
+            if (tabName === 'meusAgendamentos') {
+                loadMeusAgendamentos();
+            } else if (tabName === 'novoAgendamento') {
+                loadFormAgendamentoOptions(); // Carrega opções para o formulário de novo agendamento
+            }
+        }
+
+        // Função para carregar os agendamentos do professor logado
+        async function loadMeusAgendamentos() {
+            try {
+                const response = await fetch('/api/professor/meus_agendamentos');
+                const agendamentos = await response.json();
+                const tbody = document.getElementById('meusAgendamentosTable').querySelector('tbody');
+                tbody.innerHTML = ''; // Limpa a tabela antes de preencher
+
+                if (agendamentos.length === 0) {
+                    const row = tbody.insertRow();
+                    const cell = row.insertCell();
+                    cell.colSpan = 7; // Número de colunas na tabela
+                    cell.textContent = 'Nenhum agendamento encontrado.';
+                    cell.style.textAlign = 'center';
+                    return;
+                }
+
+                agendamentos.forEach(ag => {
+                    const row = tbody.insertRow();
+                    row.insertCell().textContent = ag.data;
+                    row.insertCell().textContent = ag.aula;
+                    row.insertCell().textContent = ag.disciplina;
+                    row.insertCell().textContent = ag.turma;
+                    row.insertCell().textContent = ag.tema;
+                    row.insertCell().textContent = ag.recurso;
+                    const actionsCell = row.insertCell();
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = 'Excluir';
+                    deleteButton.className = 'btn btn-danger btn-small';
+                    deleteButton.onclick = () => deleteAgendamento(ag.id);
+                    actionsCell.appendChild(deleteButton);
+                });
+            } catch (error) {
+                console.error('Erro ao carregar meus agendamentos:', error);
+                showNotification('Erro ao carregar seus agendamentos.', 'error');
+            }
+        }
+
+        // Função para carregar as opções dos selects do formulário de agendamento
+        async function loadFormAgendamentoOptions() {
+            try {
+                const [aulasRes, disciplinasRes, turmasRes, recursosRes] = await Promise.all([
+                    fetch('/api/admin/aulas'),
+                    fetch('/api/admin/disciplinas'),
+                    fetch('/api/admin/turmas'),
+                    fetch('/api/admin/recursos')
+                ]);
+
+                const aulas = await aulasRes.json();
+                const disciplinas = await disciplinasRes.json();
+                const turmas = await turmasRes.json();
+                const recursos = await recursosRes.json();
+
+                populateSelect('agendamentoAula', aulas, 'numero', 'turno'); // Passa 'turno' para formatar
+                populateSelect('agendamentoDisciplina', disciplinas, 'nome');
+                populateSelect('agendamentoTurma', turmas, 'nome', 'serie'); // Passa 'serie' para formatar
+                populateSelect('agendamentoRecurso', recursos, 'nome');
+
+            } catch (error) {
+                console.error('Erro ao carregar opções para agendamento:', error);
+                showNotification('Erro ao carregar opções para o formulário de agendamento.', 'error');
+            }
+        }
+
+        // Função auxiliar para preencher selects
+        function populateSelect(selectId, items, displayKey1, displayKey2 = null) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Selecione</option>'; // Opção padrão
+            items.forEach(item => {
+                const option = document.createElement('option');
+                let displayText = item[displayKey1];
+                if (displayKey2 && item[displayKey2]) {
+                    displayText += ` (${item[displayKey2]})`;
+                }
+                option.value = displayText; // O valor será o texto exibido
+                option.textContent = displayText;
+                select.appendChild(option);
+            });
+        }
+
+        // Função para criar um novo agendamento
+        document.getElementById('formNovoAgendamento').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            const data = formData.get('data');
+            const aula = formData.get('aula');
+            const disciplina = formData.get('disciplina');
+            const turma = formData.get('turma');
+            const recurso = formData.get('recurso');
+            const tema = formData.get('tema');
+
+            try {
+                const response = await fetch('/api/professor/agendamentos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data, aula, disciplina, turma, recurso, tema })
+                });
+                const result = await response.json();
+                if (result.sucesso) {
+                    showNotification(result.mensagem);
+                    resetForm('formNovoAgendamento');
+                    loadMeusAgendamentos(); // Recarrega a lista de agendamentos
+                    // Opcional: Mudar para a aba "Meus Agendamentos" após agendar
+                    document.querySelector('.tab-button[onclick*="meusAgendamentos"]').click();
+                } else {
+                    showNotification(result.mensagem, 'error');
+                }
+            } catch (error) {
+                console.error('Erro de rede ao agendar aula:', error);
+                showNotification('Erro de rede ao agendar aula: ' + error.message, 'error');
+            }
+        });
+
+        // Função para deletar agendamento
+        async function deleteAgendamento(id) {
+            if (!confirm('Tem certeza que deseja excluir este agendamento?')) {
+                return;
+            }
+            try {
+                const response = await fetch(`/api/professor/agendamentos/${id}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                if (result.sucesso) {
+                    showNotification(result.mensagem);
+                    loadMeusAgendamentos();
+                } else {
+                    showNotification(result.mensagem, 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao excluir agendamento:', error);
+                showNotification('Erro ao excluir agendamento.', 'error');
+            }
+        }
+
+        // Inicialização: abre a primeira aba e carrega os dados
+        document.addEventListener('DOMContentLoaded', () => {
+            const firstTabButton = document.querySelector('.tab-button.active');
+            if (firstTabButton) {
+                firstTabButton.click();
+            } else {
+                document.getElementById('meusAgendamentos').style.display = 'block';
+                loadMeusAgendamentos();
+            }
+        });
+    </script>
 </body>
 </html>
